@@ -124,18 +124,27 @@ export default function SkillDetailPage({ params }: { params: { slug: string } }
               <h3 className="mb-4 flex items-center gap-2 text-[15px] font-bold">
                 <HelpCircle className="h-4 w-4 text-accent" /> How to install this skill
               </h3>
-              <ol className="space-y-4 text-[13.5px] text-text-muted">
+              <ol className="text-[13.5px] text-text-muted">
                 {[
-                  "Download and unzip the file",
-                  "Go to Settings in Claude → Capabilities → scroll to Skills",
-                  "Click Add Skill → Upload Skill",
-                  "Drag and drop the .zip file",
-                  "Once it's enabled, click the three dots → Try in chat",
-                  "And voila — your whole team can use the new Skill",
-                ].map((step, i) => (
-                  <li key={i} className="flex gap-3">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                    {step}
+                  <><span className="font-semibold text-accent">Download</span> and unzip the file</>,
+                  <>Go to Settings in Claude &amp; Open Capabilities &rarr; scroll to Skills</>,
+                  <>Click Add Skill &rarr; Upload Skill</>,
+                  <>Drag and drop the .zip file</>,
+                  <>Once it&apos;s enabled click the three dots &rarr; Try in chat</>,
+                  <>And voila! Now you can try your new Skill in Claude</>,
+                ].map((step, i, arr) => (
+                  <li key={i} className="flex gap-3.5">
+                    <div className="flex flex-col items-center">
+                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
+                      {i < arr.length - 1 && (
+                        <span className="my-1.5 flex flex-1 flex-col items-center justify-center gap-[3px]">
+                          <span className="h-[3px] w-[3px] rounded-full bg-text-dim" />
+                          <span className="h-[3px] w-[3px] rounded-full bg-text-dim" />
+                          <span className="h-[3px] w-[3px] rounded-full bg-text-dim" />
+                        </span>
+                      )}
+                    </div>
+                    <span className="pb-5 leading-relaxed">{step}</span>
                   </li>
                 ))}
               </ol>
