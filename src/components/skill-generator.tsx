@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2, Copy, Check, Download, KeyRound, FileText } from "lucide-react";
+import { SYSTEM_PROMPT, parseFiles } from "@/lib/skill-prompt";
+import { slugify, titleCase } from "@/lib/utils";
 
 interface SkillFile {
   name: string;
@@ -86,20 +88,46 @@ export function SkillGenerator() {
     setLoading(true);
     setProgress(0);
     try {
-      // Base64-encode the key so security software scanning request bodies
-      // for API-key patterns doesn't intercept the request. The server
-      // streams progress events so proxies never see an idle connection.
-      const res = await fetch("/api/generate", {
+      // Call Anthropic directly from the browser (officially supported via
+      // the CORS opt-in header below). No server hop = no serverless
+      // timeout, and streaming keeps the connection active so network
+      // proxies with inactivity timeouts don't kill it.
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, k: btoa(apiKey.trim()), model }),
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey.trim(),
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 8000,
+          stream: true,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: description }],
+        }),
       });
-      if (!res.body) throw new Error("No response stream from server.");
 
+      if (!res.ok) {
+        const errText = await res.text();
+        let detail = errText.slice(0, 300);
+        try {
+          detail = JSON.parse(errText)?.error?.message ?? detail;
+        } catch {}
+        throw new Error(
+          res.status === 401
+            ? `Anthropic rejected the key: ${detail}`
+            : `Claude API error (${res.status}): ${detail}`
+        );
+      }
+      if (!res.body) throw new Error("No response stream from Anthropic.");
+
+      // Parse the SSE stream, accumulating text deltas.
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let data: any = null;
+      let raw = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -108,33 +136,44 @@ export function SkillGenerator() {
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
         for (const line of lines) {
-          if (!line.trim()) continue;
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (!payload || payload === "[DONE]") continue;
           let event: any;
           try {
-            event = JSON.parse(line);
+            event = JSON.parse(payload);
           } catch {
-            throw new Error(
-              `The server's response was replaced by another page (likely antivirus or a network filter). It begins: ${line.slice(0, 200)}`
-            );
+            continue;
           }
-          if (event.type === "error") throw new Error(event.error);
-          if (event.type === "delta") setProgress(event.chars);
-          if (event.type === "result") data = event;
+          if (event.type === "error") {
+            throw new Error(event.error?.message ?? "Claude API stream error.");
+          }
+          if (
+            event.type === "content_block_delta" &&
+            event.delta?.type === "text_delta"
+          ) {
+            raw += event.delta.text;
+            setProgress(raw.length);
+          }
         }
       }
 
-      if (!data) {
-        // Old (non-JSON-lines) server responses or plain JSON errors.
-        try {
-          data = JSON.parse(buffer);
-        } catch {
-          throw new Error(
-            `Generation ended without a result. Response begins: ${buffer.slice(0, 200)}`
-          );
-        }
-        if (data.error) throw new Error(data.error);
-      }
-      setResult(data);
+      raw = raw.trim();
+      if (!raw) throw new Error("Claude returned no content — please try again.");
+
+      const files = parseFiles(raw);
+      const mainFile =
+        files.find((f) => f.name.toLowerCase().endsWith("skill.md")) ?? files[0];
+      const nameMatch = mainFile.content.match(/^name:\s*(.+)$/m);
+      const slug = nameMatch ? nameMatch[1].trim() : slugify(description);
+
+      setResult({
+        slug,
+        title: titleCase(slug),
+        skillMd: mainFile.content,
+        files,
+        userDescription: description,
+      });
       setActiveFile(0);
     } catch (err: any) {
       setError(err.message);
