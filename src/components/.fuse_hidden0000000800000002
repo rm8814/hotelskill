@@ -28,7 +28,8 @@ export function SiteFooter() {
         <div>
           <h5 className="mb-3.5 text-xs font-semibold tracking-wide text-text">LEGAL</h5>
           <div className="flex flex-col gap-2.5">
-            <a href="https://upscale.asia/contact-us/" target="_blank" rel="noopener" className="hover:text-accent">Contact</a>
+            <Link href="#" className="hover:text-accent">Privacy Policy</Link>
+            <Link href="#" className="hover:text-accent">Contact</Link>
           </div>
         </div>
       </div>
