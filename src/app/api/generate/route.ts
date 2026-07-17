@@ -139,53 +139,81 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  try {
-    // Pin baseURL and disable authToken so stray env vars on the host
-    // (ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN) can't hijack the request.
-    const anthropic = new Anthropic({
-      apiKey: key,
-      authToken: null,
-      baseURL: "https://api.anthropic.com",
-    });
+  // Pin baseURL and disable authToken so stray env vars on the host
+  // (ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN) can't hijack the request.
+  const anthropic = new Anthropic({
+    apiKey: key,
+    authToken: null,
+    baseURL: "https://api.anthropic.com",
+  });
 
-    const message = await anthropic.messages.create({
-      model: chosenModel,
-      max_tokens: 8000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: description }],
-    });
+  // Stream newline-delimited JSON events so data flows continuously —
+  // network proxies with inactivity timeouts would otherwise kill the
+  // connection during a 30-60s generation.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (obj: unknown) =>
+        controller.enqueue(encoder.encode(JSON.stringify(obj) + "\n"));
+      try {
+        const msgStream = anthropic.messages.stream({
+          model: chosenModel,
+          max_tokens: 8000,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: description }],
+        });
 
-    const raw = message.content
-      .filter((block): block is Anthropic.TextBlock => block.type === "text")
-      .map((block) => block.text)
-      .join("\n")
-      .trim();
+        let raw = "";
+        for await (const event of msgStream) {
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
+            raw += event.delta.text;
+            send({ type: "delta", chars: raw.length });
+          }
+        }
+        raw = raw.trim();
 
-    const files = parseFiles(raw);
-    const mainFile = files.find((f) => f.name.toLowerCase().endsWith("skill.md")) ?? files[0];
+        const files = parseFiles(raw);
+        const mainFile =
+          files.find((f) => f.name.toLowerCase().endsWith("skill.md")) ??
+          files[0];
+        const nameMatch = mainFile.content.match(/^name:\s*(.+)$/m);
+        const slug = nameMatch ? nameMatch[1].trim() : slugify(description);
 
-    const nameMatch = mainFile.content.match(/^name:\s*(.+)$/m);
-    const slug = nameMatch ? nameMatch[1].trim() : slugify(description);
+        send({
+          type: "result",
+          slug,
+          title: titleCase(slug),
+          skillMd: mainFile.content,
+          files,
+          userDescription: description,
+        });
+      } catch (err: any) {
+        console.error(err);
+        const status = err?.status ?? "unknown";
+        const detail =
+          err?.error?.error?.message ||
+          err?.error?.message ||
+          err?.message ||
+          "no detail available";
+        const message =
+          err?.status === 401
+            ? `Anthropic rejected the key (401): ${detail}`
+            : `Claude API error (status ${status}): ${detail}`;
+        send({ type: "error", error: message });
+      } finally {
+        controller.close();
+      }
+    },
+  });
 
-    return NextResponse.json({
-      slug,
-      title: titleCase(slug),
-      skillMd: mainFile.content,
-      files,
-      userDescription: description,
-    });
-  } catch (err: any) {
-    console.error(err);
-    const status = err?.status ?? "unknown";
-    const detail =
-      err?.error?.error?.message ||
-      err?.error?.message ||
-      err?.message ||
-      "no detail available";
-    const message =
-      err?.status === 401
-        ? `Anthropic rejected the key (401): ${detail}`
-        : `Claude API error (status ${status}): ${detail}`;
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
