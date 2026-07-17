@@ -30,14 +30,23 @@ export function SkillGenerator() {
   const [result, setResult] = useState<GeneratedSkill | null>(null);
   const [activeFile, setActiveFile] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [loadedFromStorage, setLoadedFromStorage] = useState(false);
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (saved) {
       setApiKey(saved);
       setRememberKey(true);
+      setLoadedFromStorage(true);
     }
   }, []);
+
+  function handleClearSavedKey() {
+    localStorage.removeItem(STORAGE_KEY);
+    setApiKey("");
+    setRememberKey(false);
+    setLoadedFromStorage(false);
+  }
 
   function handleRememberToggle(checked: boolean) {
     setRememberKey(checked);
@@ -50,6 +59,7 @@ export function SkillGenerator() {
 
   function handleApiKeyChange(value: string) {
     setApiKey(value);
+    setLoadedFromStorage(false);
     if (rememberKey) {
       if (value) localStorage.setItem(STORAGE_KEY, value);
       else localStorage.removeItem(STORAGE_KEY);
@@ -120,6 +130,23 @@ export function SkillGenerator() {
           placeholder="sk-ant-api03-..."
           className="w-full rounded-xl border border-border bg-card2 p-3.5 text-sm text-text placeholder:text-text-dim focus:outline-none focus:ring-1 focus:ring-accent"
         />
+        {loadedFromStorage && apiKey && (
+          <div className="mt-2 flex items-center justify-between rounded-lg border border-border bg-card2 px-3 py-2 text-[12px] text-text-dim">
+            <span>
+              Using saved key ending in{" "}
+              <code className="rounded bg-card px-1 text-text-muted">
+                …{apiKey.slice(-6)}
+              </code>
+              {" "}— if you rotated your key, clear it and paste the new one.
+            </span>
+            <button
+              onClick={handleClearSavedKey}
+              className="ml-3 shrink-0 rounded-md border border-border px-2 py-1 text-[11.5px] text-text-muted hover:text-text"
+            >
+              Clear saved key
+            </button>
+          </div>
+        )}
         <div className="mt-3 flex items-center justify-between text-[12.5px] text-text-dim">
           <label className="flex items-center gap-1.5">
             <input
