@@ -128,7 +128,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const anthropic = new Anthropic({ apiKey: key });
+    // Pin baseURL and disable authToken so stray env vars on the host
+    // (ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN) can't hijack the request.
+    const anthropic = new Anthropic({
+      apiKey: key,
+      authToken: null,
+      baseURL: "https://api.anthropic.com",
+    });
 
     const message = await anthropic.messages.create({
       model: chosenModel,
@@ -164,9 +170,27 @@ export async function POST(req: NextRequest) {
       err?.error?.message ||
       err?.message ||
       "no detail available";
+
+    // On 401, probe Anthropic directly with a raw fetch to gather real
+    // diagnostics (the SDK error was bodiless, which is not normal).
+    let probe = "";
+    if (err?.status === 401) {
+      try {
+        const r = await fetch("https://api.anthropic.com/v1/models?limit=1", {
+          headers: { "x-api-key": key, "anthropic-version": "2023-06-01" },
+        });
+        const body = (await r.text()).slice(0, 300);
+        probe = ` | direct probe: HTTP ${r.status}, request-id=${
+          r.headers.get("request-id") ?? "MISSING"
+        }, body=${body || "(empty)"} | key fingerprint: len=${key.length}, starts=${key.slice(0, 12)}, ends=${key.slice(-4)}`;
+      } catch (probeErr: any) {
+        probe = ` | direct probe failed: ${probeErr?.message}`;
+      }
+    }
+
     const message =
       err?.status === 401
-        ? `Anthropic rejected the key (401): ${detail}`
+        ? `Anthropic rejected the key (401): ${detail}${probe}`
         : `Claude API error (status ${status}): ${detail}`;
     return NextResponse.json({ error: message }, { status: 500 });
   }
