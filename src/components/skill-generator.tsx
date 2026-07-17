@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Copy, Check, Download, KeyRound } from "lucide-react";
+import { Loader2, Copy, Check, Download, KeyRound, FileText } from "lucide-react";
 
 interface SkillFile {
   name: string;
@@ -190,13 +190,13 @@ export function SkillGenerator() {
                   <button
                     key={file.name}
                     onClick={() => setActiveFile(i)}
-                    className={`whitespace-nowrap border-b-2 px-1 py-3.5 text-[13.5px] ${
+                    className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-1 py-3.5 text-[13.5px] ${
                       i === activeFile
                         ? "border-accent text-text"
                         : "border-transparent text-text-dim"
                     }`}
                   >
-                    {file.name}
+                    <FileText className="h-3.5 w-3.5" /> {file.name}
                   </button>
                 ))}
               </div>

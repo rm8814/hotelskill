@@ -90,8 +90,8 @@ export default function SkillDetailPage({ params }: { params: { slug: string } }
 
             <div className="overflow-hidden rounded-2xl border border-border bg-card">
               <div className="flex items-center justify-between border-b border-border px-[18px]">
-                <div className="flex items-center gap-1.5 border-b-2 border-accent px-1 py-3.5 text-[13.5px] text-text">
-                  <FileText className="h-3.5 w-3.5" /> SKILL.md
+                <div className="border-b-2 border-accent px-1 py-3.5 text-[13.5px] text-text">
+                  SKILL.md
                 </div>
                 <CopyButton skillMd={skill.skillMd} />
               </div>
