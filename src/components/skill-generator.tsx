@@ -72,6 +72,12 @@ export function SkillGenerator() {
       setError("Please enter your Claude API key above first.");
       return;
     }
+    if (!apiKey.trim().startsWith("sk-ant-")) {
+      setError(
+        "That doesn't look like a Claude API key — keys start with sk-ant-. Clear the field and paste your key from console.anthropic.com."
+      );
+      return;
+    }
     if (!description.trim()) {
       setError("Please describe the skill you want first.");
       return;
