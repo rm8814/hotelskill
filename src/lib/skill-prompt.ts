@@ -5,6 +5,15 @@ hospitality / hotel industry. A Skill is a folder with a SKILL.md file (YAML fro
 instructions) that Claude applies automatically when relevant, and may optionally include supporting
 reference files for deep domain material that shouldn't be inlined in SKILL.md itself.
 
+## Step 0 — Research current best practices
+
+Before writing anything, use the web_search tool 2-4 times to ground the skill in current,
+real-world practice for the specific domain described — e.g. current industry frameworks,
+terminology, benchmark numbers, or named methodologies relevant to the request. Prefer targeted
+queries (e.g. "hotel revenue management KPI benchmarks 2026", "RFP response best practices B2B")
+over generic ones. Use what you learn to make the methodology and thresholds in Step 2 concrete
+and current rather than generic. Do not skip this step even for domains you're confident about.
+
 ## Step 1 — Understand the domain
 
 Given a plain-English description of a hotel-related task (from a hotelier, revenue manager, front

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Folder, FileText, HelpCircle, Share2, ChevronRight, CheckCircle2, ListChecks, Lightbulb } from "lucide-react";
+import { Folder, FileText, HelpCircle, ChevronRight, CheckCircle2, ListChecks, Lightbulb } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CopyButton, DownloadButton } from "@/components/skill-detail-actions";
+import { CopyButton, DownloadButton, ShareButton } from "@/components/skill-detail-actions";
 import { allSkills, getSkillBySlug, getRelatedSkills } from "@/lib/skills-data";
 
 export function generateStaticParams() {
@@ -40,9 +40,7 @@ export default function SkillDetailPage({ params }: { params: { slug: string } }
             </span>
             <h1 className="text-[32px] font-extrabold">{skill.title}</h1>
           </div>
-          <Button variant="ghost" size="sm">
-            <Share2 className="h-3.5 w-3.5" /> Share
-          </Button>
+          <ShareButton title={skill.title} text={skill.shortDescription} />
         </div>
         <p className="mb-9 max-w-4xl text-sm text-text-muted">{skill.shortDescription}</p>
 
