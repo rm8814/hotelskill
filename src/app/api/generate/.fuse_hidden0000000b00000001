@@ -29,10 +29,7 @@ Produce a complete SKILL.md with this structure:
    approached (grounded in real hospitality practice: RevPAR, ADR, OTA dynamics, guest experience,
    brand voice, staff training, as relevant).
 5. **Structured methodology** — a staged or tiered framework specific to the task (not generic
-   advice — the actual steps/checks/thresholds an expert would use). Where relevant, include
-   scoring scales (e.g. 1-5 maturity ratings), concrete numeric targets and thresholds (e.g.
-   "target >30% direct bookings", "forecast accuracy >90%"), red flags to watch for, and named
-   industry tools or standards.
+   advice — the actual steps/checks/thresholds an expert would use).
 6. **Step-by-step workflow** — how to apply the methodology to a real request.
 7. **Output style guidance** — tone, format, length expectations for what Claude produces when
    using this skill.
