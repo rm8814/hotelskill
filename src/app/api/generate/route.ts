@@ -115,7 +115,10 @@ export async function POST(req: NextRequest) {
   // key if one exists (useful for local dev) — leave ANTHROPIC_API_KEY unset
   // on a public deployment to force everyone to bring their own key, so your
   // usage/billing is never touched by visitors.
-  const key = (typeof apiKey === "string" && apiKey.trim()) || process.env.ANTHROPIC_API_KEY;
+  // Strip all whitespace and invisible characters that can sneak in on paste.
+  const cleaned =
+    typeof apiKey === "string" ? apiKey.replace(/[^\x21-\x7e]/g, "") : "";
+  const key = cleaned || process.env.ANTHROPIC_API_KEY;
 
   if (!key) {
     return NextResponse.json(
@@ -155,10 +158,16 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error(err);
+    const status = err?.status ?? "unknown";
+    const detail =
+      err?.error?.error?.message ||
+      err?.error?.message ||
+      err?.message ||
+      "no detail available";
     const message =
       err?.status === 401
-        ? "That API key was rejected by Anthropic. Double-check it's correct and active."
-        : "Something went wrong calling the Claude API. See server logs.";
+        ? `Anthropic rejected the key (401): ${detail}`
+        : `Claude API error (status ${status}): ${detail}`;
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
