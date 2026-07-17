@@ -93,16 +93,8 @@ function parseFiles(raw: string): SkillFile[] {
   return files;
 }
 
-const ALLOWED_MODELS = [
-  "claude-sonnet-5",
-  "claude-opus-4-8",
-  "claude-haiku-4-5-20251001",
-];
-const DEFAULT_MODEL = "claude-sonnet-5";
-
 export async function POST(req: NextRequest) {
-  const { description, apiKey, model } = await req.json();
-  const chosenModel = ALLOWED_MODELS.includes(model) ? model : DEFAULT_MODEL;
+  const { description, apiKey } = await req.json();
 
   if (!description || !description.trim()) {
     return NextResponse.json(
@@ -128,7 +120,7 @@ export async function POST(req: NextRequest) {
     const anthropic = new Anthropic({ apiKey: key });
 
     const message = await anthropic.messages.create({
-      model: chosenModel,
+      model: "claude-sonnet-5",
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: description }],

@@ -22,7 +22,6 @@ const STORAGE_KEY = "hotelskill_api_key";
 
 export function SkillGenerator() {
   const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("claude-sonnet-5");
   const [rememberKey, setRememberKey] = useState(false);
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,7 +70,7 @@ export function SkillGenerator() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, apiKey, model }),
+        body: JSON.stringify({ description, apiKey }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
@@ -138,18 +137,6 @@ export function SkillGenerator() {
           >
             Get a key →
           </a>
-        </div>
-        <div className="mt-3">
-          <label className="mb-1.5 block text-[12.5px] text-text-dim">Model</label>
-          <select
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className="w-full rounded-xl border border-border bg-card2 p-3 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
-          >
-            <option value="claude-sonnet-5">Claude Sonnet 5 — balanced quality &amp; cost (recommended)</option>
-            <option value="claude-opus-4-8">Claude Opus 4.8 — highest quality, higher cost</option>
-            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fastest &amp; cheapest</option>
-          </select>
         </div>
         <p className="mt-2 text-[11.5px] text-text-dim">
           Sent only to this server, forwarded straight to Anthropic to generate your
